@@ -1,0 +1,40 @@
+name: Publish to NuGet
+
+# Publishes Duta.Net to nuget.org via Trusted Publishing (OIDC, no stored API key).
+# Triggers when a version tag is pushed (e.g. v0.1.0), or manually.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # required for OIDC token issuance
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Pack
+        run: dotnet pack -c Release -o artifacts
+
+      - name: NuGet login (OIDC to temporary API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          # Your nuget.org profile username (not email). Stored as a repo secret.
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push
+        run: >
+          dotnet nuget push artifacts/*.nupkg
+          --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate

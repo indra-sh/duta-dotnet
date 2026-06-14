@@ -13,7 +13,7 @@
     <Description>Official .NET SDK for Duta — transactional email for developers.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://duta.indra.sh</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/Fawwazs17/duta-dotnet</RepositoryUrl>
+    <RepositoryUrl>https://github.com/indra-sh/duta-dotnet</RepositoryUrl>
     <PackageTags>duta;email;transactional-email;ses;resend-alternative</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RootNamespace>Duta</RootNamespace>

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <!-- NuGet package metadata -->
+    <PackageId>Duta.Net</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Duta</Authors>
+    <Description>Official .NET SDK for Duta — transactional email for developers.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://duta.indra.sh</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Fawwazs17/duta-dotnet</RepositoryUrl>
+    <PackageTags>duta;email;transactional-email;ses;resend-alternative</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RootNamespace>Duta</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

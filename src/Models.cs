@@ -14,6 +14,16 @@ public class SendEmailOptions
     [JsonPropertyName("to")]
     public IReadOnlyList<string> To { get; set; } = new List<string>();
 
+    /// <summary>CC recipients. Optional.</summary>
+    [JsonPropertyName("cc")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? Cc { get; set; }
+
+    /// <summary>BCC recipients. Optional.</summary>
+    [JsonPropertyName("bcc")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? Bcc { get; set; }
+
     [JsonPropertyName("subject")]
     public string Subject { get; set; } = "";
 
@@ -54,6 +64,12 @@ public class Email
     [JsonPropertyName("to")]
     public IReadOnlyList<string> To { get; set; } = new List<string>();
 
+    [JsonPropertyName("cc")]
+    public IReadOnlyList<string>? Cc { get; set; }
+
+    [JsonPropertyName("bcc")]
+    public IReadOnlyList<string>? Bcc { get; set; }
+
     [JsonPropertyName("from")]
     public string From { get; set; } = "";
 
@@ -84,4 +100,8 @@ public class ListEmailsResult
 
     [JsonPropertyName("limit")]
     public int Limit { get; set; }
+
+    /// <summary>Total number of emails in your account (across all pages).</summary>
+    [JsonPropertyName("total")]
+    public int Total { get; set; }
 }

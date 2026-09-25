@@ -1,67 +1,103 @@
-# Duta .NET SDK
+# Duta.Net
 
-Official .NET client for [Duta](https://duta.indra.sh). Targets .NET 8.
+The official .NET SDK for [Duta](https://duta.indra.sh), transactional email
+for Malaysia.
+
+- .NET 8+. Async throughout, with `CancellationToken`.
+- `services.AddDuta(...)` for ASP.NET Core and any host with dependency injection.
+- Retries rate limits and server errors safely: every send carries an
+  idempotency key, so a retry can never send twice.
+
+## Upgrading from 0.1.x
+
+0.2.0 is a new SDK for Duta's current API, not an update of 0.1.x, which was
+written for an earlier version of Duta that no longer runs.
 
 ## Install
 
-```bash
+```sh
 dotnet add package Duta.Net
 ```
 
-## Quickstart
+## ASP.NET Core
 
 ```csharp
-using Duta;
-
-var duta = new DutaClient("duta_live_xxx");
-
-var result = await duta.Emails.SendAsync(new SendEmailOptions
-{
-    From = "hello@yourdomain.com",
-    To = new[] { "user@example.com" },
-    Subject = "Welcome to Duta",
-    Html = "<p>Thanks for signing up!</p>",
-});
-
-Console.WriteLine($"Sent: {result.Id}");
+builder.Services.AddDuta(o => o.ApiKey = builder.Configuration["Duta:ApiKey"]);
 ```
 
-Get an API key from the [dashboard](https://app.duta.indra.sh). The sender domain must be verified first.
+Then inject `DutaClient` wherever you send mail:
 
-## Error handling
+```csharp
+app.MapPost("/orders/{id}/receipt", async (string id, DutaClient duta) =>
+{
+    var sent = await duta.Emails.SendAsync(new SendEmailRequest
+    {
+        From = "Kedai <resit@kedai.my>",
+        To = ["siti@example.com"],
+        Subject = "Resit #1042",
+        Html = "<p>Terima kasih.</p>",
+    }, new SendOptions(IdempotencyKey: $"receipt-{id}"));
+    return sent.Id;
+});
+```
 
-Methods throw `DutaException` on failure:
+## Without dependency injection
+
+```csharp
+var duta = new DutaClient(Environment.GetEnvironmentVariable("DUTA_API_KEY"));
+var sent = await duta.Emails.SendAsync(email);
+```
+
+Keep one `DutaClient` for the life of the app. Errors throw `DutaException`:
+`Code` is Duta's [error code](https://docs.duta.indra.sh/guides/errors/) and
+`RequestId` finds the request on the Logs screen.
 
 ```csharp
 try
 {
-    await duta.Emails.SendAsync(options);
+    await duta.Emails.SendAsync(email);
 }
 catch (DutaException e)
 {
-    Console.WriteLine($"{e.StatusCode} {e.Name}: {e.Message}");
-    // e.Name: authentication_error | permission_denied | rate_limit_exceeded | ...
+    logger.LogError("Send failed: {Code} {RequestId}", e.Code, e.RequestId);
 }
 ```
 
-## API
+## Batch and paging
 
-### `new DutaClient(string apiKey, string baseUrl = ..., HttpClient? httpClient = null)`
+```csharp
+await duta.Batch.SendAsync([first, second], new BatchOptions(Validation: "permissive"));
 
-Pass your own `HttpClient` to reuse a shared instance (recommended in long-running apps).
+await foreach (var email in duta.Emails.ListAllAsync(new EmailListParams { Status = "bounced" }))
+    Console.WriteLine(email.Id);
+```
 
-### `await duta.Emails.SendAsync(SendEmailOptions options)`
+## Verify webhooks
 
-Returns `SendEmailResult` with `Id` and `Status`.
+```csharp
+var body = await new StreamReader(Request.Body).ReadToEndAsync(); // the raw body
+var evt = WebhookSignature.Verify(
+    body,
+    Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString()),
+    configuration["Duta:WebhookSecret"]);
+```
 
-### `await duta.Emails.GetAsync(string id)`
+It throws `WebhookVerificationException` when the signature is wrong or the
+delivery is more than five minutes old.
 
-Retrieve one email. Requires a full-access API key.
+## Everything else
 
-### `await duta.Emails.ListAsync(int page = 1, int limit = 20)`
+| | |
+|---|---|
+| `Emails` | `SendAsync`, `GetAsync`, `ListAsync`, `ListAllAsync` |
+| `Batch` | `SendAsync` |
+| `Domains` | `CreateAsync`, `ListAsync`, `GetAsync`, `VerifyAsync`, `RemoveAsync` |
+| `ApiKeys` | `CreateAsync`, `ListAsync`, `RemoveAsync` |
+| `Webhooks` | `CreateAsync`, `ListAsync`, `GetAsync`, `RemoveAsync`, `EnableAsync`, `TestAsync`, `DeliveriesAsync`, `Verify` |
+| `Suppressions` | `CreateAsync`, `ListAsync`, `ListAllAsync`, `RemoveAsync` |
+| `Logs` | `ListAsync`, `ListAllAsync`, `GetAsync` |
+| `Usage` | `GetAsync` |
 
-List emails, newest first. Requires a full-access API key.
+Options: `new DutaClientOptions { ApiKey, BaseUrl, MaxRetries = 2, Timeout = 30s }`.
 
-## License
-
-MIT
+Full documentation: https://docs.duta.indra.sh
